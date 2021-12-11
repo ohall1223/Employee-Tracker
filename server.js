@@ -2,7 +2,8 @@
 const mysql = require('mysql2');
 const inquirer = require('inquirer')
 const consoleTable = require('console.table')
-const figlet = require('figlet')
+const figlet = require('figlet');
+const { listenerCount } = require('events');
 
 // connect ti database 
 const connection = mysql.createConnection({
@@ -148,6 +149,104 @@ addEmployee = () => {
                     choices: roles
                 }
             ])
+            .then(roleChoice => {
+                const role = roleChoice.role;
+                params.push(role);
+
+                const managerSql = `SELECT * FROM employee`;
+
+                connection.promise().query(managerSql, (err, data) => {
+                    if(err) throw err;
+
+                    const managers = data.map(({ id, first_name, last_name}) => ({ name: first_name + " " + last_name, value: id }));
+
+                    inquirer.prompt ([
+                        {
+                            type: 'list',
+                            name: 'manager',
+                            message: 'Who is the employee\'s manager?',
+                            choices: managers
+                        }
+                    ])
+                    .then(managerChoice => {
+                        const manager = managerChoice.manager;
+                        params.push(manager);
+
+                        const sql = `INSERT INTO employee (first_name. last_name, role_id, manager_id)
+                        VALUES (?, ?, ?, ?)`;
+
+                        connection.query(sql, params, (err, result) => {
+                            if(err) throw err;
+                            console.log('Employee sucessfully added!')
+
+                            showEmployees();
+                        })
+                    })
+                })
+            })
+        })
+    })
+}
+
+// update an employee
+updateEmployee = () => {
+    // import employees from the employee table 
+    const employeeSql = `SELECT * FROM employee`;
+
+    connection.promise().query(employeeSql, (err, data) => {
+        if(err) throw err;
+
+        const employees = data.map(({ id, first_name, last_name }) => ({ name: first_name + " " + last_name, value: id }));
+
+        inquirer.prompt([
+            {
+                type: 'list',
+                name: 'name',
+                message: 'Which employee\'s role do you want to update',
+                choices: employees
+            }
+        ])
+        .then(empChoice => {
+            const employee = empChoice.name;
+            const params = [];
+            params.push(employee);
+
+            const roleSql = `SELECT * FROM role`;
+
+            connection.promise().query(roleSql, (err, data) => {
+                if(err) throw err;
+
+                const roles = data.map(({ id, title}) => ({ name: title, value: id }))
+
+                inquirer.prompt([
+                    {
+                        type: 'list',
+                        name: 'role',
+                        message: 'Which role do you want to assign to the selected employee?',
+                        choices: roles
+                    }
+                ])
+                .then(roleChoice => {
+                    const role = roleChoice.role;
+                    params.push(role);
+
+                    let employee = params[0]
+                    params[0] = role
+                    params[1] = employee
+
+                    console.log(params)
+
+                    const sql = `UPDATE employee SET role_id = ? WHERE id = ?`;
+
+                    connection.query(sql, params, (err, result) => {
+                        if(err) throw err;
+
+                        console.log('Employee sucessfully updated');
+
+                        showEmployees();
+                    })
+                })
+            })
         })
     })
 }
