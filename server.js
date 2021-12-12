@@ -4,6 +4,7 @@ const inquirer = require('inquirer')
 const consoleTable = require('console.table')
 const figlet = require('figlet');
 const { listenerCount } = require('events');
+const { addAbortSignal } = require('stream');
 
 // connect ti database 
 const connection = mysql.createConnection({
@@ -247,6 +248,127 @@ updateEmployee = () => {
                     })
                 })
             })
+        })
+    })
+}
+
+// show all roles
+showRoles = () => {
+    console.log('Showing all roles')
+
+    const sql = `SELECT role.id, role.title, department.name AS department FROM role 
+                INNER JOIN department ON role.department_id = department.id`
+
+    connection.promise().query(sql, (err, rows) => {
+        if(err) throw err;
+        console.table(rows);
+        userQuestions()
+    })
+}
+
+// add a role
+addRole = () => {
+    inquirer.prompt([
+        {
+            type: 'input',
+            name: 'role',
+            message: 'What is the name of the role?',
+            validate: addRole => {
+                if(addRole) {
+                    return true;
+                } else {
+                    console.log('Please enter a role');
+                    return false;
+                }
+            }
+        },
+        {
+            type: 'input',
+            name: 'salary',
+            meggage: 'What is the salary of the role?',
+            validate: addSalary => {
+                if(isNaN(addSalary)) {
+                    return true;
+                } else {
+                    console.log('Please enter a salary is USD')
+                    return false;
+                }
+            }
+        }
+    ])
+    .then(answer => {
+        const params = [answer.role, answer.salary]
+        
+        const roleSql = `SELECT name, id FROM department`;
+
+        connection.promise().query(roleSql, (err, data) => {
+            if(err) throw err;
+
+            const departments = data.map(({ name, id}) => ({ name: name, value: id }))
+
+            inquirer.prompt([
+                {
+                    type: 'list',
+                    name: 'dept',
+                    message: 'Which department does the role belong to?',
+                    choices: departmemts
+                }
+            ])
+            .then(deptChoice => {
+                const dept = deptChoice.dept
+                params.push(dept);
+
+                const sql = `INSERT INTO role (title, salar, department_id)
+                            VALUES (?, ?, ?)`;
+
+                connection.query(sql, params, (err, result) => {
+                    if (err) throw err;
+                    console.log(`${answer.role} sucessfullt added to roles!`);
+
+                    showRoles();
+                })
+            })
+        })
+    })
+}
+
+// show all departments
+showDepartments = () => {
+    console.log(`Showing all departments`)
+    const sql = `SELECT department.id AS id, department.name AS department FROM department`
+    
+    connection.promise().query(sql, (err, rows) =>{
+        if(err) throw err;
+        console.table(rows);
+        userQuestions();
+    });
+};
+
+// add a department
+addDepartment = () => {
+    inquirer.prompt([
+        {
+            type: 'input',
+            name: 'addDept',
+            meggage: 'What is the name of the department?',
+            validate: addDept => {
+                if(addDept) {
+                    return true;
+                } else {
+                    console.log('Please enter a department name');
+                    return false;
+                }
+            }
+        }
+    ])
+    .then(answer => {
+        const sql = `INSERT INTO department (name)
+                    VALUES (?)`;
+        connection.query(sql, answer.addDept, (err, result) => {
+            if(err) throw err;
+            console.log(`${answer.addDept} sucessfully added to departments!`);
+
+            showDepartments();
         })
     })
 }
