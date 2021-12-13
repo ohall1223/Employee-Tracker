@@ -78,7 +78,7 @@ const userQuestions = () => {
         if(choices === 'Delete Role') {
             deleteRole();
         }
-        if(choices === 'View All Departents') {
+        if(choices === 'View All Departments') {
             showDepartments();
         }
         if(choices === 'Add Department') {
@@ -375,11 +375,11 @@ deleteRole = () => {
 // show all departments
 const showDepartments = () => {
     console.log(`Showing all departments`)
-    const sql = `SELECT department.id AS id, department.name AS department FROM department`
+    const sql = `SELECT department.id AS id, department.name AS department FROM department`;
     
-    connection.query(sql, (err, rows) =>{
+    connection.query(sql, (err, res) =>{
         if(err) throw err;
-        console.table(rows);
+        console.table(res);
         userQuestions();
     });
 };

@@ -12,7 +12,7 @@
 
 - This page is for building an employee tracking database.
 
-Video walkthrough of the inquirer funcitonality:
+Video walkthrough of the inquirer funcitonality: https://watch.screencastify.com/v/qfYcprIizHv6pVigziLY
 
 ## Credits
 
