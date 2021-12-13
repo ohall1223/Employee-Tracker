@@ -2,24 +2,21 @@
 
 ## Discription
 
--Web application that allows the user to take notes with a title and text and add them to an itemized note list. The notes are stored on the server in a data base and are rendered to the page.
+-Web application that allows the user build a database of employees based upon their first & last names, their roles, the department that role is in and the starting salary for that role. The inquirer funcitonality will also allow the user to update, delete and display information.
 
 ## Installation
 
--The user will need to install express to run the server and uuid to initiate the id counter.
+-The user will need to install inquirer, mysql2, console.table and figlet.
 
 ## Usage
 
-- This page is for writing and saving notes.
+- This page is for building an employee tracking database.
 
-![Screenshot of the launch page that takes the user to the note taking page](./Assets/Screenshot1.png)
-
-![Screenshot of the blank note taking page](./Assets/Screenshot2.png)
+Video walkthrough of the inquirer funcitonality:
 
 ## Credits
 
--Olivia Hall built the javascript functions.
--Bootcamp Spot wrote the CSS and HTML that renders the page.
+-Olivia Hall built the javascript functions, the inquirer prompts, the database structure and the figlet text banner.
 
 ## License
 
