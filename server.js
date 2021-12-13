@@ -1,27 +1,29 @@
 // dependencies
 const mysql = require('mysql2');
 const inquirer = require('inquirer')
-const consoleTable = require('console.table')
+require('console.table')
 const figlet = require('figlet');
 const { listenerCount } = require('events');
 const { addAbortSignal } = require('stream');
 
-// connect ti database 
+
+
+// connect to database 
 const connection = mysql.createConnection({
     host: 'localhost',
-    user: process.env.USERNAME,
-    password: process.env.PASSWORD,
-    database: process.env.DATABASE,
+    user: 'root',
+    password: 'password',
+    database: 'office_db',
 });
 
 connection.connect(err => {
     if(err) throw err;
     console.log('connected as id ' + connection.threadId);
-    afterConnection();
+    userQuestions();
 })
 
 // figlet employee tracker Welcome Image
-figlet('Welcome to Employee Manager!!', function(err, data) {
+figlet('Office Manager', function(err, data) {
     if (err) {
         console.log('Something went wrong...');
         console.dir(err);
@@ -80,54 +82,33 @@ const userQuestions = () => {
 };
 
 // show all employees
-showEmployees = () => {
+const showEmployees = () => {
     console.log('Showing all employees');
-    const sql = `SELECT employee.id, 
-                employee.first_name,
-                employee.last_name,
-                role.title,
-                department.name AS department
-                role.salary,
-                CONCAT (manager.first_name, "", manager.last_name) AS manager FROM employee
-                LEFT JOIN role ON employee.role_id = role.id
-                LEFT JOIN department ON role.department_id = department.id
-                LEFT JOIN employee manager ON employee.manager_id = manager.id`;
+    const query = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager
+    FROM employee
+    LEFT JOIN employee manager on manager.id = employee.manager_id
+    INNER JOIN role ON (role.id = employee.role_id)
+    INNER JOIN department ON (department.id = role.department_id)
+    ORDER BY employee.id;`
 
-    connection.promise().query(sql, (err, rows) => {
+    connection.query(query, (err, res) => {
         if(err) throw err;
-        console.tables(rows);
+        console.table(res);
         userQuestions();
      })
 }
 
-addEmployee = () => {
+const addEmployee = () => {
     inquirer.prompt([
         {
             type: 'input',
             name: 'firstName',
-            message: 'What is the employee\'s first name?',
-            validate: addFirst => {
-                if(addFirst) {
-                    return true;
-                } else {
-                    console.log('Please enter a first name');
-                    return false;
-                }
-            } 
+            message: 'What is the employee\'s first name?'
         },
         {
             type: 'input',
             name: 'lastName',
-            message: 'What is the employee\'s last name?',
-            validate: addLast => {
-                if(addLast) {
-                    return true;
-                } else {
-                    console.log('Please enter a last name');
-                    return false;
-                }
-            }
-
+            message: 'What is the employee\'s last name?'
         }
     ])
     .then(answer => {
@@ -137,7 +118,7 @@ addEmployee = () => {
 
         const roleSql = `SELECT role.id, role.title FROM role`;
 
-        connection.promise().query(roleSql, (err, data) => {
+        connection.query(roleSql, (err, data) => {
             if(err) throw err;
 
             const roles = data.map(({ id, title }) => ({ name: title, value: id }))
@@ -156,7 +137,7 @@ addEmployee = () => {
 
                 const managerSql = `SELECT * FROM employee`;
 
-                connection.promise().query(managerSql, (err, data) => {
+                connection.query(managerSql, (err, data) => {
                     if(err) throw err;
 
                     const managers = data.map(({ id, first_name, last_name}) => ({ name: first_name + " " + last_name, value: id }));
@@ -173,7 +154,7 @@ addEmployee = () => {
                         const manager = managerChoice.manager;
                         params.push(manager);
 
-                        const sql = `INSERT INTO employee (first_name. last_name, role_id, manager_id)
+                        const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
                         VALUES (?, ?, ?, ?)`;
 
                         connection.query(sql, params, (err, result) => {
@@ -190,11 +171,11 @@ addEmployee = () => {
 }
 
 // update an employee
-updateEmployee = () => {
+const updateEmployee = () => {
     // import employees from the employee table 
     const employeeSql = `SELECT * FROM employee`;
 
-    connection.promise().query(employeeSql, (err, data) => {
+    connection.query(employeeSql, (err, data) => {
         if(err) throw err;
 
         const employees = data.map(({ id, first_name, last_name }) => ({ name: first_name + " " + last_name, value: id }));
@@ -214,7 +195,7 @@ updateEmployee = () => {
 
             const roleSql = `SELECT * FROM role`;
 
-            connection.promise().query(roleSql, (err, data) => {
+            connection.query(roleSql, (err, data) => {
                 if(err) throw err;
 
                 const roles = data.map(({ id, title}) => ({ name: title, value: id }))
@@ -253,13 +234,13 @@ updateEmployee = () => {
 }
 
 // show all roles
-showRoles = () => {
+const showRoles = () => {
     console.log('Showing all roles')
 
     const sql = `SELECT role.id, role.title, department.name AS department FROM role 
                 INNER JOIN department ON role.department_id = department.id`
 
-    connection.promise().query(sql, (err, rows) => {
+    connection.query(sql, (err, rows) => {
         if(err) throw err;
         console.table(rows);
         userQuestions()
@@ -267,33 +248,17 @@ showRoles = () => {
 }
 
 // add a role
-addRole = () => {
+const addRole = () => {
     inquirer.prompt([
         {
             type: 'input',
             name: 'role',
             message: 'What is the name of the role?',
-            validate: addRole => {
-                if(addRole) {
-                    return true;
-                } else {
-                    console.log('Please enter a role');
-                    return false;
-                }
-            }
         },
         {
             type: 'input',
             name: 'salary',
-            meggage: 'What is the salary of the role?',
-            validate: addSalary => {
-                if(isNaN(addSalary)) {
-                    return true;
-                } else {
-                    console.log('Please enter a salary is USD')
-                    return false;
-                }
-            }
+            meggage: 'What is the salary of the role?'
         }
     ])
     .then(answer => {
@@ -301,7 +266,7 @@ addRole = () => {
         
         const roleSql = `SELECT name, id FROM department`;
 
-        connection.promise().query(roleSql, (err, data) => {
+        connection.query(roleSql, (err, data) => {
             if(err) throw err;
 
             const departments = data.map(({ name, id}) => ({ name: name, value: id }))
@@ -311,19 +276,19 @@ addRole = () => {
                     type: 'list',
                     name: 'dept',
                     message: 'Which department does the role belong to?',
-                    choices: departmemts
+                    choices: departments
                 }
             ])
             .then(deptChoice => {
                 const dept = deptChoice.dept
                 params.push(dept);
 
-                const sql = `INSERT INTO role (title, salar, department_id)
+                const sql = `INSERT INTO role (title, salary, department_id)
                             VALUES (?, ?, ?)`;
 
                 connection.query(sql, params, (err, result) => {
                     if (err) throw err;
-                    console.log(`${answer.role} sucessfullt added to roles!`);
+                    console.log(`${answer.role} sucessfully added to roles!`);
 
                     showRoles();
                 })
@@ -333,11 +298,11 @@ addRole = () => {
 }
 
 // show all departments
-showDepartments = () => {
+const showDepartments = () => {
     console.log(`Showing all departments`)
     const sql = `SELECT department.id AS id, department.name AS department FROM department`
     
-    connection.promise().query(sql, (err, rows) =>{
+    connection.query(sql, (err, rows) =>{
         if(err) throw err;
         console.table(rows);
         userQuestions();
@@ -345,20 +310,12 @@ showDepartments = () => {
 };
 
 // add a department
-addDepartment = () => {
+const addDepartment = () => {
     inquirer.prompt([
         {
             type: 'input',
             name: 'addDept',
             meggage: 'What is the name of the department?',
-            validate: addDept => {
-                if(addDept) {
-                    return true;
-                } else {
-                    console.log('Please enter a department name');
-                    return false;
-                }
-            }
         }
     ])
     .then(answer => {
@@ -372,3 +329,5 @@ addDepartment = () => {
         })
     })
 }
+
+userQuestions()
